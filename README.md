@@ -34,17 +34,28 @@ potential omitted variable bias.
 Dataset used : The IHDS dataset by the National Council of Applied
 Economic Research and the University of Maryland (Desai et al., 2007,
 2015).
-
-##Approach
-
+## Approach
 First we import the necessary packages and create a subset of the original dataset.
 Then we create a subset of the original dataset for training the model.
 
 The columns shown here are selected and stored in the df2 dataframe.
 
-Preprocessing Techniques used -
-
- First step is to remove ‘useless’ columns from the dataset ,i.e , there are some variables such as time of interview, type of roof in household , animals kept in the house ,etc.
+## Preprocessing Techniques used -
+First step is to remove ‘useless’ columns from the dataset ,i.e , there are some variables such as time of interview, type of roof in household , animals kept in the house ,etc.
 Since these variables are not directly affecting the pension earned by an individual we remove these from the dataset.
+Next up we impute the missing  values in the resulting dataset since these can interfere with our regression results .
 
-Next up we impute the missing  values in the resulting dataset since these can interfere with our regression results . The 
+After studying the dataset we create new variables that are needed for understanding the regression analysis. For example -
+ 
+Here we checked that RO3 was a variable that represents female category but the categorical variable took value 2 when the gender was female . But while doing regression we prefer the categorical variable to have values as 0 or 1 . So the code above does exactly this . 
+
+Another example is the categorical variable ID11 representing the caste took values 1  for ‘hindu’ , 2 for ‘muslim’ , 3 4 and 5 for ‘SC’ ‘ST’ and ‘OBC’ respectively . So we created 5 new variables each representing the above 5 categories where each column takes a value of 0 or 1 .
+
+The following for loop iterates over each numeric column and performs the following steps:
+
+Creates a boxplot for the column using boxplot(my_data[[col]], horizontal = TRUE, main = col)
+
+Identifies potential outliers using the interquartile range (IQR) method. This is done by calling boxplot.stats(my_data[[col]]), which returns the lower and upper whisker limits of the boxplot.Increments the row_count counter for each row that contains a potential outlier.
+
+Finally, the code identifies rows that appear in more than 5 numeric columns using outlier_rows <- which(row_count > 5) and removes these rows from the dataset using my_data <- my_data[-outlier_rows, ].In summary, the code detects potential outliers in numeric columns using boxplots and the IQR method and removes rows that contain many outliers.
+
