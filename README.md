@@ -97,7 +97,7 @@ Dataset used : The IHDS dataset by the National Council of Applied Economic Rese
 - First we import the necessary packages and create a subset of the original dataset.
 - Then we create a subset of the original dataset for training the model.
 
-![](Aspose.Words.db019fe4-e78e-4fea-b4f1-b90308931f65.001.png)
+![](./photos/Aspose.Words.db019fe4-e78e-4fea-b4f1-b90308931f65.001.png)
 
 The columns shown here are selected and stored in the df2 dataframe.
 
