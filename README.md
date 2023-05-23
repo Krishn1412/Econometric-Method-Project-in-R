@@ -151,14 +151,14 @@ And the plot obtained can be seen below -
 
 
 
-![](./photos/Aspose.Words.db019fe4-e78e-4fea-b4f1-b90308931f65.009.png)
+![](Aspose.Words.db019fe4-e78e-4fea-b4f1-b90308931f65.009.png)
 
 
 
 
 **Level of significance of regression coefficients -** 
 
-![](./photos/Aspose.Words.db019fe4-e78e-4fea-b4f1-b90308931f65.010.png)
+![](Aspose.Words.db019fe4-e78e-4fea-b4f1-b90308931f65.010.png)
 
 These were the values obtained from our regression model depicting level of significance.
 
