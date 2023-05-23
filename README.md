@@ -97,7 +97,7 @@ Dataset used : The IHDS dataset by the National Council of Applied Economic Rese
 - First we import the necessary packages and create a subset of the original dataset.
 - Then we create a subset of the original dataset for training the model.
 
-![](./photos/Aspose.Words.db019fe4-e78e-4fea-b4f1-b90308931f65.001.png)
+![](Aspose.Words.db019fe4-e78e-4fea-b4f1-b90308931f65.001.png)
 
 The columns shown here are selected and stored in the df2 dataframe.
 
@@ -107,17 +107,17 @@ The columns shown here are selected and stored in the df2 dataframe.
 
 Since these variables are not directly affecting the pension earned by an individual we remove these from the dataset.
 
-- Next up we impute the missing  values in the resulting dataset since these can interfere with our regression results . The following code snippet is how we are imputing missing values.![](./photos/Aspose.Words.db019fe4-e78e-4fea-b4f1-b90308931f65.002.png)
+- Next up we impute the missing  values in the resulting dataset since these can interfere with our regression results . The following code snippet is how we are imputing missing values.![](Aspose.Words.db019fe4-e78e-4fea-b4f1-b90308931f65.002.png)
 
 - After studying the dataset we create new variables that are needed for understanding the regression analysis. For example -
 
-![](./photos/Aspose.Words.db019fe4-e78e-4fea-b4f1-b90308931f65.003.png) 
+![](Aspose.Words.db019fe4-e78e-4fea-b4f1-b90308931f65.003.png) 
 
 Here we checked that RO3 was a variable that represents female category but the categorical variable took value 2 when the gender was female . But while doing regression we prefer the categorical variable to have values as 0 or 1 . So the code above does exactly this . 
 
 Another example is the categorical variable ID11 representing the caste took values 1  for ‘hindu’ , 2 for ‘muslim’ , 3 4 and 5 for ‘SC’ ‘ST’ and ‘OBC’ respectively . So we created 5 new variables each representing the above 5 categories where each column takes a value of 0 or 1 .
 
-![](./photos/Aspose.Words.db019fe4-e78e-4fea-b4f1-b90308931f65.004.png)  
+![](Aspose.Words.db019fe4-e78e-4fea-b4f1-b90308931f65.004.png)  
 
 
 In similar fashion we created more new variables that were helpful in our regression analysis.
@@ -130,22 +130,22 @@ In similar fashion we created more new variables that were helpful in our regres
 
 - Finally, the code identifies rows that appear in more than 5 numeric columns using outlier\_rows <- which(row\_count > 5) and removes these rows from the dataset using my\_data <- my\_data[-outlier\_rows, ].In summary, the code detects potential outliers in numeric columns using boxplots and the IQR method and removes rows that contain many outliers.
 
-![](./photos/Aspose.Words.db019fe4-e78e-4fea-b4f1-b90308931f65.005.png)
+![](Aspose.Words.db019fe4-e78e-4fea-b4f1-b90308931f65.005.png)
 
 
 **Analysis -**
 
-![](./photos/Aspose.Words.db019fe4-e78e-4fea-b4f1-b90308931f65.006.png)
+![](Aspose.Words.db019fe4-e78e-4fea-b4f1-b90308931f65.006.png)
 
 This is a plot of age against number of people who get pension
 
-![](./photos/Aspose.Words.db019fe4-e78e-4fea-b4f1-b90308931f65.007.png)
+![](Aspose.Words.db019fe4-e78e-4fea-b4f1-b90308931f65.007.png)
 
 Out of the 20 important features in the research paper we have listed above the 10 most important features among them , based on ROC curve area.
 
 - ` `The code below was implemented to plot the correlation between the important features.
 
-![](./photos/Aspose.Words.db019fe4-e78e-4fea-b4f1-b90308931f65.008.png)
+![](Aspose.Words.db019fe4-e78e-4fea-b4f1-b90308931f65.008.png)
 
 And the plot obtained can be seen below -
 
@@ -166,7 +166,7 @@ These were the values obtained from our regression model depicting level of sign
 
 These values obtained are very similar to those seen in the research paper . 
 
-![](./photos/Aspose.Words.db019fe4-e78e-4fea-b4f1-b90308931f65.012.png)
+![](Aspose.Words.db019fe4-e78e-4fea-b4f1-b90308931f65.012.png)
 
 From the above confusion matrix we can see that the predicted values which correspond to the actual values have a high frequency.
 
@@ -358,15 +358,15 @@ Logistic regression is a popular statistical method used to model the relationsh
 
 `       `Model hyperparameters and training :
 
-![](./photos/Aspose.Words.db019fe4-e78e-4fea-b4f1-b90308931f65.013.png)
+![](Aspose.Words.db019fe4-e78e-4fea-b4f1-b90308931f65.013.png)
 
-Model specifications after training ![](./photos/Aspose.Words.db019fe4-e78e-4fea-b4f1-b90308931f65.014.png)
+Model specifications after training ![](Aspose.Words.db019fe4-e78e-4fea-b4f1-b90308931f65.014.png)
 
-Results :![](./photos/Aspose.Words.db019fe4-e78e-4fea-b4f1-b90308931f65.015.png)
+Results :![](Aspose.Words.db019fe4-e78e-4fea-b4f1-b90308931f65.015.png)
 
 `                  `**AUC curve for this model :**
 
-![](./photos/Aspose.Words.db019fe4-e78e-4fea-b4f1-b90308931f65.016.png)
+![](Aspose.Words.db019fe4-e78e-4fea-b4f1-b90308931f65.016.png)
 
 As we can see , the accuracy has significantly increased to 79.72% from 59.68% of LinReg Model. 
 
