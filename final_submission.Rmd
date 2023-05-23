@@ -1,0 +1,972 @@
+---
+title: "EM ASSIGNMENT GROUP 5"
+output: html_notebook
+---
+
+
+
+```{r}
+library(dplyr)
+library(tidyverse)
+library(haven)
+library(ggplot2)
+library(pROC)
+library(caret)
+```
+```{r}
+
+ind=new_ind2012
+hh=hh2012
+OGData=left_join(ind, hh, by = join_by(IDHH == IDHH))
+
+```
+
+
+```{r}
+# CREATING SUBSET OF THE ORIGINAL DATASET FOR OUR USAGE
+df2=OGData %>% select(HHID.y,IDHH,PERSONID,IDPERSON,ME13, ME7, MM3W, MM3M,FM3, FM4A,FM4B,FM4C,MM2W, MM2M,CO22, HHEDUC.y, NPERSONS.y, TR2, TR1, NADULTM.y, NADULTF.y, RC1B1, ID18A, RO5, IN11S1.x, ASSETS2005.x, RO4, RO6, URBAN2011.x, ID13.x, RO3, ED2,ID11.x,ME1,ME2,ME3,ME4,ME5,ME6,ME8,ME2,ME9,ME10, ASSETS.x,ED6,WS4,WS14,WS13,WKSALARY,WKAGLAB,WKNONAG,WKNREGA,WKANY5,SN2H1,SN2H2,FU1,SN2E1,SN2E2,SN2F1,SN2F2,SN2G1,SN2G2,SN2I1,SN2I2,ME14,ME14A,FM5A,FM6A,IN11S4.x,IN11S2.x,RC1B3)
+
+```
+```{r}
+df2
+```
+
+
+
+
+
+```{r}
+df2 <- df2[, -which(names(df2) == "IDPERSON")]
+df2 <- df2[, -which(names(df2) == "IDHH")]
+```
+
+```{r}
+# Define a function to impute missing values with mode
+impute_mode <- function(x) {
+  if(is.numeric(x)) {
+    mode_val <- names(sort(table(x[!is.na(x)]), decreasing = TRUE))[1]
+    mode_val <- as.numeric(mode_val)
+  } else {
+    mode_val <- as.character(names(sort(table(x[!is.na(x)]), decreasing = TRUE))[1])
+  }
+  x[is.na(x)] <- mode_val
+  return(x)
+}
+
+# Apply the impute_mode function to every column in the dataset
+df2_imputed <- as.data.frame(lapply(df2, impute_mode))
+
+```
+
+
+```{r}
+df2<-df2_imputed
+```
+
+
+
+
+**** HERE WE CREATE VARIABLE FOR TV, NEWSPAPER AND NUMBER OF ADULTS  ****
+
+*** watch tv ***
+
+
+```{r}
+
+
+df2$watch_TV <-ifelse(df2$RO3 == 1, ifelse(df2$MM3M == 3, 1, 0), ifelse(df2$MM3W == 3, 1, 0))
+
+
+```
+
+ *** newspaper ***
+
+```{r}
+
+ df2$read_newspaper <- ifelse(df2$RO3 == 1, ifelse(df2$MM2M == 3, 1, 0), ifelse(df2$MM2W == 3, 1, 0))
+```
+
+```{r}
+
+df2$num_adult<-df2$NADULTF.y+df2$NADULTM.y
+
+
+```
+
+**** VARIABLE FOR WIDOW ****
+
+```{r}
+df2$hh_ass<-df2$ASSETS2005.x
+
+
+```
+
+*** HOUSEHOLD ASSETS***
+```{r}
+
+df2$Widowed <- ifelse(df2$RO6 == 3,1,0)
+
+# df2[c("Widowed","RO6")]
+
+```
+
+**** VARIABLE FOR FEMALE ****
+
+```{r}
+
+df2$female <- ifelse(df2$RO3 == 2,1,0)
+# df2[c("RO3","female")]
+```
+
+
+
+
+**** VARIABLE FOR WORKING >=240 HR ****
+
+
+```{r}
+
+
+df2$work <- as.numeric(df2$WKAGLAB %in% c(3, 4) | df2$WKANY5 %in% c(3, 4) | 
+                        df2$WKSALARY %in% c(3, 4) | df2$WKNREGA %in% c(3, 4) | 
+                        df2$WKNONAG %in% c(3, 4))
+
+
+```
+
+
+
+
+
+**** VARIABLE FOR LAND HOLDING ****
+
+
+```{r}
+
+df2$landHolding<- (df2$FM4A-df2$FM6A)/df2$FM3
+
+# df2[c("FM4A","FM4B","FM4C","landHolding")]
+```
+
+
+
+****  VARIABLE FOR HEAD OF HOUSEHOLD  ****
+
+
+
+```{r}
+
+
+df2$head <- ifelse(df2$RO4 == 1,1,0)
+# df2[c("RO4","head")]
+```
+
+
+
+****  VARIABLE FOR Local government ****
+
+
+
+```{r}
+
+df2$local_gov <- ifelse(df2$ME14 == 1 | df2$ME14A==1, 1, 0)
+
+
+```
+```{r}
+
+summary(df2$local_gov)
+```
+
+**** Hindu ****
+
+```{r}
+
+df2$hindu <- ifelse(df2$ID11.x == 1,1,0)
+# df2[c("hindu")]
+```
+*** MUSLIM ***
+
+```{r}
+# df2["ID11.x"
+df2$muslim <- ifelse(df2$ID11.x == 2,1,0)
+# df2[c("muslim")]
+
+```
+*** CASTE OBC***
+
+```{r}
+df2$obc <- ifelse(df2$ID13.x == 3,1,0)
+# df2[c("obc")]
+```
+*** CASTE ST***
+
+```{r}
+
+df2$st <- ifelse(df2$ID13.x == 5,1,0)
+# df2[c("st")]
+
+```
+*** CASTE SC ***
+
+```{r}
+
+df2$sc <- ifelse(df2$ID13.x == 4,1,0)
+# df2[c("sc","ID13.x")]
+
+```
+*** Highest Educated adult of family
+
+```{r}
+
+df2$perm_job <- ifelse(df2$WS13 == 4,1,0)
+# df2[c("perm_job","WS13")]
+
+```
+*** Public meetings and Social org ***
+```{r}
+
+df2$social_org <- ifelse(df2$ME7 == 1|df2$ME4 == 1|df2$ME5 == 1|df2$ME6 == 1|df2$ME8 == 1|df2$ME2 == 1|df2$ME10 == 1|df2$ME9 == 1|df2$ME1==1|df2$ME3 == 1,1,0)
+df2$public_meet <- ifelse(df2$ME13 == 1,1,0)
+
+```
+
+
+
+
+*** Education and literate***
+
+```{r}
+df2$literate <- ifelse(df2$ED2 == 1,1,0)
+```
+
+*** Education ***
+
+```{r}
+df2$edu <- ifelse(df2$ED6 <= 16, df2$ED6, 17)
+
+```
+
+```{r}
+df2$urban <- ifelse(df2$URBAN2011.x == 0, 0, 1)
+
+
+# df2["urban"]
+```
+*** Electricity***
+```{r}
+df2$elec <- ifelse(df2$FU1 == 0, 0, 1)
+
+# df2["elec"]
+```
+*** Collaboration *** 
+```{r}
+df2$collab <- ifelse(df2$TR2 == 1, 1, 0)
+```
+
+*** BPL *** 
+```{r}
+df2$BPL <- ifelse(df2$RC1B1 == 1| df2$RC1B3 == 1,1,0)
+```
+
+*** Social pension *** 
+```{r}
+# df2["IN11S1.x"]
+df2$socialPen <- ifelse(df2$IN11S1.x == 1 |df2$IN11S2.x == 1 | df2$IN11S4.x == 1, 1, 0)
+
+```
+
+
+
+*** Peace Rate *** 
+```{r}
+# df2["TR1"]
+df2$peace <- ifelse(df2$TR1 == 3, 1, 0)
+
+
+# df2["peace"]
+```
+
+*** Asset Poor *** 
+```{r}
+# df2["ASSETS.x"]
+
+df2$assetPoor<-ifelse(df2$ASSETS.x < 15,1,0)
+
+# df2[c("assetPoor","ASSETS.x")]
+```
+
+```{r}
+summary(df2)
+```
+
+```{r}
+summary(df3)
+```
+
+```{r}
+model <- lm(socialPen~RO5+landHolding+BPL+local_gov+public_meet+social_org,data = df2)
+print(model)
+```
+*** 2005 BEGINS ***
+```{r}
+ind1=ind2005
+# ind1.as_factor()
+```
+
+```{r}
+
+hh1=hh2005
+```
+```{r}
+hh11=hh1 %>% select(HHID,IDHH,IDPSU,ME11, ME1, ME2, ME3, ME4, ME5, ME6, ME7, ME8, ME9, MM3A, MM3B,MM2A, MM2B,FU1, HHED5ADULT, NPERSONS, TR2, TR1, NADULTS, RC1A, SN3A,FM2,FM4,SN3F,SN3D,ME12,FM6A)
+ind11=ind1 %>% select(PERSONID,CASEID,HHID,IDHH,RO5,HHASSETS,RO4,RO6,URBAN,GROUPS8,RO3,ED2,ED5,WS11A,PERSONID,IDPSU,HHID,IN7,WS6YEAR,IN8,IN10)
+
+
+df3=left_join(ind11, hh11, by = join_by(IDHH == IDHH))
+```
+
+
+```{r}
+df3$socialPen<-ifelse(!is.na(df3$IN7) & df3$IN7==df3$PERSONID ,1,0)
+```
+
+
+```{r}
+df3 <- df3[, -which(names(df3) == "IN7")]
+df3 <- df3[, -which(names(df3) == "IN8")]
+df3 <- df3[, -which(names(df3) == "IN10")]
+```
+
+
+```{r}
+# Define a function to impute missing values with mode
+impute_mode <- function(x) {
+  if(is.numeric(x)) {
+    mode_val <- names(sort(table(x[!is.na(x)]), decreasing = TRUE))[1]
+    mode_val <- as.numeric(mode_val)
+  } else {
+    mode_val <- as.character(names(sort(table(x[!is.na(x)]), decreasing = TRUE))[1])
+  }
+  x[is.na(x)] <- mode_val
+  return(x)
+}
+
+# Apply the impute_mode function to every column in the dataset
+df3_imputed <- as.data.frame(lapply(df3, impute_mode))
+df3<-df3_imputed
+```
+
+
+
+
+
+*** CLEANING ***
+
+
+```{r}
+df3$hh_ass<-df3$HHASSETS
+# df3["hh_ass"]
+```
+
+
+*** watch tv *** 
+
+
+```{r}
+  
+df3$watch_TV <-ifelse(df3$RO3 == 1, ifelse(df3$MM3A == 2, 1, 0), ifelse(df3$MM3B == 2, 1, 0))
+
+```
+
+*** newspaper ***
+
+```{r}
+
+df3$read_newspaper <- ifelse(df3$RO3 == 1, ifelse(df3$MM2A == 2, 1, 0), ifelse(df3$MM2B == 2, 1, 0))
+# df3[c("RO3","MM2A","MM2B","newspaper")]
+```
+
+
+*** num adult *** 
+
+```{r}
+df3$num_adult<-df3$NADULTS
+```
+
+**** VARIABLE FOR WIDOW ****
+
+```{r}
+
+df3$Widowed <- ifelse(df3$RO6 == 3,1,0)
+# df3[c("RO6","Widowed")]
+```
+***
+
+**** VARIABLE FOR FEMALE ****
+
+```{r}
+# df3["RO3"]
+df3$female <- ifelse(df3$RO3 == 2,1,0)
+# df3[c("RO6","Widowed")
+```
+***
+
+**** VARIABLE FOR HEAD OF HH****
+
+```{r}
+# df3["RO4"]
+df3$head <- ifelse(df3$RO4 == 1,1,0)
+# df3[c("RO6","Widowed")]
+```
+
+
+
+**** VARIABLE FOR LOCAL GOVT CONN**
+
+```{r}
+# df3["SN3A"]
+df3$local_gov<-ifelse((df3$ME12 == 2) | (df3$ME12 == 1),1,0)
+```
+
+
+
+**** VARIABLE FOR HINDU****
+
+```{r}
+# df3["GROUPS8"]
+# df3$head <- ifelse(df3$RO4 == 1,1,0)
+df3$hindu <- ifelse(df3$GROUPS8==1|df3$GROUPS8==2|df3$GROUPS8==3|df3$GROUPS8==4|df3$GROUPS8 ==5,1,0)
+# df3[c("GROUPS8","hindu")]
+```
+**** VARIABLE FOR MUSLIM****
+
+```{r}
+# df3["GROUPS8.x"]
+df3$muslim <- ifelse(df3$GROUPS8 == 6,1,0)
+# df3[c("RO6","Widowed")]
+```
+**** VARIABLE FOR obc****
+
+```{r}
+df3$obc <- ifelse(df3$GROUPS8 == 3,1,0)
+```
+**** VARIABLE FOR st****
+
+```{r}
+df3$st <- ifelse(df3$GROUPS8 == 5,1,0)
+```
+
+**** VARIABLE FOR sc****
+
+```{r}
+df3$sc <- ifelse(df3$GROUPS8 == 4,1,0)
+```
+
+**** VARIABLE FOR SOCIAL ORG**
+
+```{r}
+df3$social_org <- ifelse(df3$ME6 == 1|df3$ME7 == 1|df3$ME1 == 1|df3$ME2 == 1|df3$ME3 == 1|df3$ME4 == 1|df3$ME5 == 1|df3$ME8 == 1|df3$ME9 == 1,1,0)
+```
+
+
+**** VARIABLE FOR PUBLIC MEET**
+
+```{r}
+df3$public_meet<-ifelse(df3$ME11 == 1,1,0)
+```
+
+**** VARIABLE FOR LITERATE****
+
+```{r}
+df3$literate <- ifelse(df3$ED2 == 1,1,0)
+```
+**** VARIABLE FOR EDUCATION****
+
+```{r}
+df3$edu<-df3$ED5
+```
+**** VARIABLE FOR URBAN****
+
+```{r}
+df3$urban<-ifelse(df3$URBAN == 1,0,1)
+```
+
+**** VARIABLE FOR ELECTRICITY****
+
+```{r}
+df3$elec<-ifelse(df3$FU1 == 1,0,1)
+
+```
+*** ASSET POOR ***
+```{r}
+df3$assetPoor<-ifelse(df3$HHASSETS < 11,1,0)
+
+```
+
+*** COLLABORATION ***
+```{r}
+
+df3$collab<-ifelse(df3$TR2==1,1,0)
+
+```
+
+*** PEACE ***
+```{r}
+
+df3$peace<-ifelse(df3$TR1==3,1,0)
+
+```
+
+*** BPL ***
+```{r}
+# df3["RC1A"]
+df3$BPL<-ifelse(df3$RC1A==1|df3$RC1A==3,1,0)
+
+```
+*** PERMANENT JOB ***
+```{r}
+# df3["WS11A"]
+# df3$perm_job<-ifelse(df3$RC1A==1,1,0)
+hh_emp<- aggregate(WS11A~IDHH, data =df3, FUN = function(x) any(x ==  2))
+```
+
+```{r}
+df3=left_join(df3, hh_emp, by = join_by(IDHH == IDHH))
+df3$perm_job<-ifelse(df3$WS11A.y==TRUE,1,0)
+```
+
+*** WORK ***
+```{r}
+# df3["WS6YEAR"]
+df3$work<-ifelse(df3$WS6YEAR>240,1,0)
+
+```
+*** LAND HOLDING ***
+```{r}
+
+# df3<- df3[df3$FM2 != -1, ]
+# df3["FM4"]
+# mean_col <- mean(df3$FM4)
+# mean_col
+df3$landHolding<-(df3$FM4+df3$FM6A)/df3$FM2
+# summary(df3$landHolding)
+```
+
+
+
+*** AFTER ***
+```{r}
+df3$after<-0
+df2$after<-1
+```
+
+
+
+*** MERGING PROCESS BEGINS ***
+
+```{r}
+df2005=df3%>% select(RO5,watch_TV,read_newspaper,num_adult,Widowed,female,work,landHolding,head,local_gov,hindu,muslim,obc,st,sc,perm_job,social_org,public_meet,literate,edu,urban,elec,collab,BPL,socialPen,peace,assetPoor,after,hh_ass)
+
+df2011=df2%>% select(RO5,watch_TV,read_newspaper,num_adult,Widowed,female,work,landHolding,head,local_gov,hindu,muslim,obc,st,sc,perm_job,social_org,public_meet,literate,edu,urban,elec,collab,BPL,socialPen,peace,assetPoor,after,hh_ass)
+```
+
+```{r}
+final_df_subset1 <- df2005[df2005$RO5>=45&df2005$landHolding>=0,]
+# final_df_subset
+final_df_subset2 <- df2011[df2011$RO5>=45&df2011$landHolding>=0, ]
+# final_df_subset
+final_df<-rbind(final_df_subset1,final_df_subset2)
+
+```
+
+```{r}
+summary_df <- final_df_subset1 %>%
+  summarise_all(list(
+    mean = ~ mean(.),
+    sd = ~ sd(.),
+    min = ~ min(.),
+    max = ~ max(.)
+  ))
+
+# Print summary dataframe
+print(summary_df)
+```
+
+
+```{r}
+summary_df <- final_df_subset2 %>%
+  summarise_all(list(
+    mean = ~ mean(.),
+    sd = ~ sd(.),
+    min = ~ min(.),
+    max = ~ max(.)
+  ))
+
+# Print summary dataframe
+print(summary_df)
+```
+
+
+```{r}
+final_df
+```
+```{r}
+mean_col <- mean(final_df$RO5)
+mean_col
+```
+```{r}
+# final_df$social_capital
+final_df$BPL0<-ifelse(final_df$BPL==1 & final_df$after==0,1,0)
+final_df$BPL1<-final_df$after*final_df$BPL
+final_df$BPL2<-final_df$BPL*final_df$assetPoor
+final_df$BPL3<-final_df$after*final_df$assetPoor*final_df$BPL
+
+
+final_df$local0<-ifelse(final_df$local_gov==1 & final_df$after==0,1,0)
+final_df$local1<-final_df$after*final_df$local_gov
+final_df$local2<-final_df$assetPoor*final_df$local_gov
+final_df$local3<-final_df$after*final_df$assetPoor*final_df$local_gov
+
+
+final_df$pub0<-ifelse(final_df$public_meet==1 & final_df$after==0,1,0)
+final_df$pub1<-final_df$after*final_df$public_meet
+final_df$pub2<-final_df$assetPoor*final_df$public_meet
+final_df$pub3<-final_df$after*final_df$assetPoor*final_df$public_meet
+
+
+final_df$social0<-ifelse(final_df$social_org==1 & final_df$after==0,1,0)
+final_df$social1<-final_df$after*final_df$social_org
+final_df$social2<-final_df$assetPoor*final_df$social_org
+final_df$social3<-final_df$after*final_df$assetPoor*final_df$social_org
+
+
+final_df$land0<-ifelse(final_df$landHolding==1 & final_df$after==0,1,0)
+final_df$land1<-final_df$after*final_df$landHolding
+final_df$land2<-final_df$landHolding*final_df$assetPoor
+final_df$land3<-final_df$after*final_df$assetPoor*final_df$landHolding
+
+
+final_df$hass0<-ifelse(final_df$hh_ass==1 & final_df$after==0,1,0)
+final_df$hass1<-final_df$after*final_df$hh_ass
+final_df$hass2<-final_df$assetPoor*final_df$hh_ass
+final_df$hass3<-final_df$after*final_df$assetPoor*final_df$hh_ass
+
+
+final_df$age1<-final_df$after*final_df$RO5
+final_df$age2<-final_df$assetPoor*final_df$RO5
+final_df$age3<-final_df$after*final_df$assetPoor*final_df$RO5
+```
+
+
+```{r}
+final_df$BPL00<-ifelse(final_df$BPL==1 & final_df$after==0 & final_df$assetPoor==0,1,0)
+final_df$BPL01<-ifelse(final_df$BPL==1 & final_df$after==0 & final_df$assetPoor==1,1,0)
+final_df$BPL10<-ifelse(final_df$BPL==1 & final_df$after==1 & final_df$assetPoor==0,1,0)
+final_df$BPL11<-ifelse(final_df$BPL==1 & final_df$after==1 & final_df$assetPoor==1,1,0)
+
+
+final_df$local00<-ifelse(final_df$local_gov==1 & final_df$after==0 & final_df$assetPoor==0,1,0)
+final_df$local01<-ifelse(final_df$local_gov==1 & final_df$after==0 & final_df$assetPoor==1,1,0)
+final_df$local10<-ifelse(final_df$local_gov==1 & final_df$after==1 & final_df$assetPoor==0,1,0)
+final_df$local11<-ifelse(final_df$local_gov==1 & final_df$after==1 & final_df$assetPoor==1,1,0)
+
+
+final_df$pub00<-ifelse(final_df$public_meet==1 & final_df$after==0 & final_df$assetPoor==0,1,0)
+final_df$pub01<-ifelse(final_df$public_meet==1 & final_df$after==0 & final_df$assetPoor==1,1,0)
+final_df$pub10<-ifelse(final_df$public_meet==1 & final_df$after==1 & final_df$assetPoor==0,1,0)
+final_df$pub11<-ifelse(final_df$public_meet==1 & final_df$after==1 & final_df$assetPoor==1,1,0)
+
+
+final_df$social00<-ifelse(final_df$social_org==1 & final_df$after==0 & final_df$assetPoor==0,1,0)
+final_df$social01<-ifelse(final_df$social_org==1 & final_df$after==0 & final_df$assetPoor==1,1,0)
+final_df$social10<-ifelse(final_df$social_org==1 & final_df$after==1 & final_df$assetPoor==0,1,0)
+final_df$social11<-ifelse(final_df$social_org==1 & final_df$after==1 & final_df$assetPoor==1,1,0)
+
+
+final_df$land00<-ifelse(final_df$landHolding==1 & final_df$after==0 & final_df$assetPoor==0,1,0)
+final_df$land01<-ifelse(final_df$landHolding==1 & final_df$after==0 & final_df$assetPoor==1,1,0)
+final_df$land10<-ifelse(final_df$landHolding==1 & final_df$after==1 & final_df$assetPoor==0,1,0)
+final_df$land11<-ifelse(final_df$landHolding==1 & final_df$after==1 & final_df$assetPoor==1,1,0)
+```
+
+
+```{r}
+library(ggcorrplot)
+library(caret)
+# create a correlation plot using ggplot2
+cor_mat <- cor(final_df[, c("landHolding", "RO5", "hh_ass", "BPL", "local_gov", "public_meet", "social_org", "after")])
+ggcorrplot(cor_mat, type = "lower", method = "circle", colors = c("#6D9EC1", "white", "#E46726"))
+
+# check for high correlations (absolute values > 0.7)
+high_cor <- findCorrelation(cor_mat, cutoff = 0.7, verbose = TRUE)
+
+# print the names of the highly correlated variables
+colnames(cor_mat)[high_cor]
+```
+
+
+
+
+
+*** FINAL REGRESSION MODEL ***
+```{r}
+
+# Split data into train and test sets
+set.seed(456)
+# Split the data into training and testing sets
+trainIndex <- createDataPartition(final_df$socialPen, p = 0.7, list = FALSE)
+trainIndex <- as.vector(trainIndex)
+train <- final_df[trainIndex, ]
+test <- final_df[-trainIndex, ]
+train$socialPen <- as.numeric(as.character(train$socialPen))
+test$socialPen <- as.numeric(as.character(test$socialPen))
+
+```
+```{r}
+# summary(train_data$socialPen)
+mean_col <- mean(train$socialPen)
+mean_col
+# summary(test_data$socialPen)
+```
+
+```{r}
+mean_col <- mean(test$socialPen)
+mean_col
+```
+
+```{r}
+
+model <- lm(socialPen~BPL+local_gov+public_meet+social_org+RO5+unlist(landHolding)+hh_ass+after, data = train)
+print(model)
+
+
+```
+```{r}
+
+new_data <- data.frame(BPL=mean(final_df$BPL),local_gov=mean(final_df$local_gov),public_meet=mean(final_df$public_meet),social_org=mean(final_df$social_org),RO5=mean(final_df$RO5),landHolding=mean(final_df$landHolding),hh_ass=mean(final_df$hh_ass),after=mean(final_df$after))
+
+prediction_mean <- predict(model, newdata = new_data)
+#Creating confusion matrix
+predictions <- predict(model, newdata = test)
+
+```
+
+```{r}
+# # Create a confusion matrix
+conf_mat <- table(Predicted = ifelse(predictions > prediction_mean, 1, 0),
+                     Actual = test$socialPen)
+# # 
+# # Print the confusion matrix
+conf_mat
+
+```
+
+
+```{r}
+# create some example data
+set.seed(123)
+
+# calculate accuracy
+accuracy <- sum(diag(conf_mat)) / sum(conf_mat)
+
+# calculate precision
+precision <- conf_mat[2, 2] / sum(conf_mat[, 2])
+
+# calculate recall
+recall <- conf_mat[2, 2] / sum(conf_mat[2, ])
+
+# calculate specificity
+specificity <- conf_mat[1, 1] / sum(conf_mat[1, ])
+
+# calculate F1 score
+f1_score <- 2 * precision * recall / (precision + recall)
+
+# print results
+cat("Confusion Matrix:\n")
+print(conf_mat)
+
+cat("\nAccuracy:", accuracy)
+cat("\nPrecision:", precision)
+cat("\nRecall:", recall)
+cat("\nSpecificity:", specificity)
+cat("\nF1 Score:", f1_score)
+
+```
+
+```{r}
+conf_mat_df <- as.data.frame(conf_mat)
+
+# Plot the confusion matrix
+library(ggplot2)
+ggplot(data = conf_mat_df, aes(x = Predicted, y = Actual, fill = Freq)) + 
+  geom_tile() +
+  scale_fill_gradient(low = "white", high = "steelblue", limits = c(0,max(conf_mat_df$Freq))) +
+  labs(title = "Confusion Matrix", x = "Predicted", y = "Actual", fill = "Frequency") +
+  theme(axis.text = element_text(size = 12), 
+        axis.title = element_text(size = 14, face = "bold"),
+        plot.title = element_text(size = 16, face = "bold"))
+
+
+```
+
+
+```{r}
+
+# Calculate mean squared error
+mse <- mean((predictions -  prediction_mean)^2)
+cat("MSE:", mse, "\n")
+
+# Calculate R-squared
+ss_res <- sum((predictions - test$socialPen)^2)
+ss_tot <- sum((test$socialPen - mean(test$socialPen))^2)
+r_squared <- 1 - (ss_res / ss_tot)
+cat("R-squared:", r_squared, "\n")
+
+```
+
+
+
+```{r}
+
+# Convert socialPen to factor
+final_df$socialPen <- as.factor(final_df$socialPen)
+
+# Filter the data to only include rows with socialPen == 1
+plot_data <- final_df %>% filter(socialPen == 1)
+
+# Plot the histogram with only red bars
+ggplot(plot_data, aes(x = RO5, fill = socialPen)) +
+  geom_histogram(binwidth = 1, position = "dodge") +
+  scale_fill_manual(values = c("red")) +
+  labs(x = "Age", y = "Count", fill = "Social Pension")
+
+```
+```{r}
+model <- lm(socialPen~BPL0+BPL1+local0+local1+pub0+pub1+social0+social1, data = final_df)
+print(model)
+```
+```{r}
+model <- lm(socialPen~BPL, data = final_df_subset1)
+print(model)
+```
+```{r}
+model <- lm(socialPen~BPL+local_gov+public_meet+social_org, data =final_df_subset2)
+print(model)
+
+```
+```{r}
+model <- lm(socialPen~BPL00+BPL01+BPL10+BPL11+local00+local01+local10+local11+pub00+pub01+pub10+pub11+social00+social01+social10+social11, data = final_df)
+print(model)
+```
+```{r}
+model <- lm(socialPen~BPL+BPL1+BPL2+BPL3+local_gov+local1+local2+local3+public_meet+pub1+pub2+pub3+social_org+social1+social2+social3, data = final_df)
+print(model)
+```
+```{r}
+tester<-  subset(final_df, select = c(RO5,BPL,hh_ass,landHolding,local_gov,public_meet,social_org,watch_TV,peace,after))
+# dff <- subset(dff, select = -c(v000, caseid,hw4,hw5,hw6,hw7,hw8,hw9,hw10,hw11,hw12,hw13,hw15,v008a,b18,s412a))
+# Calculate feature importance using ROC curve area as score
+roc_imp <- filterVarImp(x =tester[,1:ncol(tester)], y = final_df$socialPen, 
+                         nonpara = TRUE, func = roc.area)
+
+# Sort the score in decreasing order
+roc_imp <- data.frame(cbind(variable = rownames(roc_imp), score = roc_imp[,1]))
+roc_imp$score <- as.double(roc_imp$score)
+roc_imp[order(roc_imp$score,decreasing = TRUE),]
+```
+
+
+```{r}
+
+# Plot the top 10 features by ROC curve area
+top_n <- 10
+plot_data <- head(roc_imp, n = top_n)
+
+ggplot(data = plot_data, aes(x = variable, y = score)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  ggtitle(paste0("Top ", top_n, " Feature Importance by ROC Curve Area")) +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  xlab("Variable") +
+  ylab("ROC Curve Area")
+
+```
+
+```{r}
+set.seed(3033)
+intra <- createDataPartition(y = final_df$socialPen, p= 0.9, list = FALSE)
+intrain3 <- as.vector(intra)
+# training3 <- final_df[intra,]
+testy <- final_df[-intrain3,]
+```
+
+
+
+```{r}
+
+
+set.seed(1111)
+
+trainIndex <- createDataPartition(testy$socialPen, p = .7, 
+                                  list = FALSE, 
+                                  times = 1)
+trainIndex <- as.vector(trainIndex)
+training <-testy[trainIndex,]
+testing <- testy[-trainIndex,]
+
+cat("Training rows: ", nrow(training), "\n")
+
+
+```
+```{r}
+# Randomly undersample the majority class
+set.seed(123)
+majority <- subset(training, socialPen == 0)
+minority <- subset(training, socialPen == 1)
+n_majority <- nrow(majority)
+undersampled_majority <- majority[sample(n_majority, size = nrow(minority)), ]
+
+# Combine the undersampled majority class and the minority class
+balanced_training <- rbind(minority, undersampled_majority)
+
+# Train the model on the balanced data
+ctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 1)
+
+lambda_grid <- expand.grid(alpha = 1, lambda = seq(0.12, 0.15, by = 0.005))
+
+model <- train(socialPen ~ .,
+               data = balanced_training,
+               method = "glmnet",
+               family = "binomial",
+               preProc = c("center", "scale"),
+               trControl = ctrl,
+               tuneGrid = lambda_grid)
+
+
+```
+```{r}
+print(model)
+```
+```{r}
+predictions <- predict(model, testing)
+sum(predictions != as_factor(testing$socialPen))
+```
+
+```{r}
+confusionMatrix(predictions, as.factor(testing$socialPen))
+```
+
+```{r}
+predictions_prob <- predict(model, testing, 'prob')
+predictions_prob
+```
+
+```{r}
+
+predictions_prob_1 <- predictions_prob[, 2]
+predictions_2 <- ifelse(predictions_prob_1 > 0.5, 1, 0)
+
+test_roc = roc(testing$socialPen ~ predictions_2, data = testing, plot = TRUE, print.auc = TRUE)
+```
+
+
