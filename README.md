@@ -107,7 +107,7 @@ The columns shown here are selected and stored in the df2 dataframe.
 
 Since these variables are not directly affecting the pension earned by an individual we remove these from the dataset.
 
-- Next up we impute the missing  values in the resulting dataset since these can interfere with our regression results . The following code snippet is how we are imputing missing values.![](Aspose.Words.db019fe4-e78e-4fea-b4f1-b90308931f65.002.png)
+- Next up we impute the missing  values in the resulting dataset since these can interfere with our regression results . The following code snippet is how we are imputing missing values.![](./photos/Aspose.Words.db019fe4-e78e-4fea-b4f1-b90308931f65.002.png)
 
 - After studying the dataset we create new variables that are needed for understanding the regression analysis. For example -
 
